@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  # Next.js frontend
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: nextjs
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+  # Django backend
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    container_name: django
+    ports:
+      - "8000:8000"
+    environment:
+      - DJANGO_ENV=production
+    volumes:
+      - ./backend:/backend
+    networks:
+      - app-network
+
+  # Database (PostgreSQL, if applicable)
+  # Uncomment and configure the database if needed.
+  # db:
+  #   image: postgres:latest
+  #   container_name: postgres
+  #   environment:
+  #     POSTGRES_USER: user
+  #     POSTGRES_PASSWORD: password
+  #     POSTGRES_DB: your_db
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   networks:
+  #     - app-network
+
+networks:
+  app-network:
+    driver: bridge
+
+# volumes:
+#   postgres_data:

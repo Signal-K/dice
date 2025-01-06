@@ -17,12 +17,15 @@ const HomePage: React.FC = () => {
   const [transactionStatus, setTransactionStatus] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [product, setProduct] = useState<Product | null>(null);
+  const [last4, setLast4] = useState<string | null>(null); // Store last 4 digits
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     const values = QueryString.parse(searchParams.toString());
     const success = values.success === 'true';
     const session_id = values.session_id as string;
+
+    console.log("session_id:", session_id); // Log the session_id to ensure it's correct
 
     if (success) {
       setTransactionStatus('Transaction Successful');
@@ -39,11 +42,10 @@ const HomePage: React.FC = () => {
   const fetchSessionDetails = async (sessionId: string) => {
     try {
       const response = await fetch(`/api/stripe/get-session-details?session_id=${sessionId}`);
-const text = await response.text(); // Get the raw response
-console.log(text); // Log it to see what you're receiving
-const data = JSON.parse(text); // Parse the JSON after inspecting the response
-      // const data = await response.json();
-      
+      const text = await response.text(); // Get the raw response
+      console.log("Raw response:", text); // Log it to inspect the raw response
+      const data = JSON.parse(text); // Parse the JSON after inspecting the response
+
       if (data?.line_items && data.line_items.length > 0) {
         const item = data.line_items[0];
         setProduct({
@@ -51,6 +53,11 @@ const data = JSON.parse(text); // Parse the JSON after inspecting the response
           price: item.amount_total / 100, // Convert cents to dollars
           image: item.image_url || 'default_image_url.jpg',
         });
+      }
+
+      // Set the last 4 card digits from the payment method
+      if (data?.payment_intent?.payment_method_details?.card?.last4) {
+        setLast4(data.payment_intent.payment_method_details.card.last4);
       }
     } catch (error) {
       console.error('Error fetching session details:', error);
@@ -94,6 +101,14 @@ const data = JSON.parse(text); // Parse the JSON after inspecting the response
       ) : (
         <p className="text-center mt-8">No product details available.</p>
       )}
+
+      {/* Display last 4 digits of the card */}
+      {last4 && (
+        <div className="mt-4 text-center">
+          <p className="text-lg text-gray-800">Last 4 digits of the card: **** **** **** {last4}</p>
+        </div>
+      )}
+
       <form action={`${API_URL}/api/stripe/create-checkout-session`} method="POST" className="mt-8">
         <button className="button w-full py-3 bg-blue-600 text-white rounded-lg shadow-lg hover:bg-blue-700 transition-all duration-300">
           Checkout

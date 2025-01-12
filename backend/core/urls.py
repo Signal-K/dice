@@ -1,6 +1,7 @@
 from django.contrib import admin
-from django.urls import path, include
+from django.urls import path, include  # Ensure 'include' is imported
 
 urlpatterns = [
-    path('api/stripe/', include('payments.urls')),
+    path('admin/', admin.site.urls),
+    path('api/stripe/', include('payments.urls')),  # Include payments URLs here
 ]

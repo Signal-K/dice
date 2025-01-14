@@ -3,7 +3,7 @@
 import React, { useEffect, useState, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import QueryString from 'query-string';
-import { API_URL } from '../config';
+import { API_URL } from '../config'; // Ensure API_URL points to your Next.js backend
 import '../styles/Subscrip.css';
 
 interface Product {
@@ -38,8 +38,11 @@ const HomePage: React.FC = () => {
 
   const fetchSessionDetails = async (sessionId: string) => {
     try {
-      const response = await fetch(`http://localhost:8000/api/stripe/get-session-details?session_id=${sessionId}`);
-      const data = await response.json();
+      const response = await fetch(`/api/stripe/get-session-details?session_id=${sessionId}`);
+const text = await response.text(); // Get the raw response
+console.log(text); // Log it to see what you're receiving
+const data = JSON.parse(text); // Parse the JSON after inspecting the response
+      // const data = await response.json();
       
       if (data?.line_items && data.line_items.length > 0) {
         const item = data.line_items[0];

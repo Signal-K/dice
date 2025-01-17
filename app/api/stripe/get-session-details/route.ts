@@ -19,7 +19,6 @@ export async function GET(req: NextRequest) {
     }
 
     const paymentIntentId = session.payment_intent as string;
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
     const charges = await stripe.charges.list({ payment_intent: paymentIntentId });
 
     if (charges.data.length === 0) {

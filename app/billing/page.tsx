@@ -1,9 +1,9 @@
-import Image from "next/image"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
-import { Download, ArrowUpRight } from 'lucide-react'
-import { Sidebar } from "./sidebar"
+import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { Download, ArrowUpRight } from 'lucide-react';
+import { Sidebar } from "@/components/sidebar";
 
 export default function BillingPage() {
   return (

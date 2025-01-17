@@ -12,8 +12,7 @@ const HomePage: React.FC = () => {
   const searchParams = useSearchParams();
   const [transactionStatus, setTransactionStatus] = useState<string | null>(null);
   const [sessionId, setSessionId] = useState<string | null>(null);
-  const [product, setProduct] = useState<Product | null>(null);
-  const [last4, setLast4] = useState<string | null>(null);
+  const [sessionDetails, setSessionDetails] = useState<any>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
@@ -38,22 +37,14 @@ const HomePage: React.FC = () => {
   const fetchSessionDetails = async (sessionId: string) => {
     try {
       const response = await fetch(`/api/stripe/get-session-details?session_id=${sessionId}`);
-      const text = await response.text();
-      console.log('Raw response:', text);
-      const data = JSON.parse(text);
+      const data = await response.json();
+      console.log('Session details:', data);
 
-      if (data?.line_items && data.line_items.length > 0) {
-        const item = data.line_items[0];
-        setProduct({
-          name: item.name,
-          price: item.amount_total / 100,
-          image: item.image_url || 'default_image_url.jpg',
-        });
+      if (data.error) {
+        throw new Error(data.error);
       }
 
-      if (data?.payment_intent?.payment_method_details?.card?.last4) {
-        setLast4(data.payment_intent.payment_method_details.card.last4);
-      }
+      setSessionDetails(data);
     } catch (error) {
       console.error('Error fetching session details:', error);
     } finally {
@@ -66,11 +57,26 @@ const HomePage: React.FC = () => {
       <TransactionStatus status={transactionStatus} />
       <SessionIdDisplay sessionId={sessionId} />
       {loading ? (
-        <p className="text-center mt-8">Loading product details...</p>
+        <p className="text-center mt-8">Loading session details...</p>
       ) : (
-        <ProductDetails product={product} />
+        <>
+          <div className="session-details">
+            <p><strong>Customer Name:</strong> {sessionDetails?.customer_name}</p>
+            <p><strong>Customer Email:</strong> {sessionDetails?.customer_email}</p>
+            <p><strong>Status:</strong> {sessionDetails?.status}</p>
+            <p><strong>Amount Total:</strong> {sessionDetails?.amount_total / 100} {sessionDetails?.currency.toUpperCase()}</p>
+            <p><strong>Payment Status:</strong> {sessionDetails?.payment_status}</p>
+            <p><strong>Invoice:</strong> {sessionDetails?.invoice}</p>
+            <p><strong>Subscription:</strong> {sessionDetails?.subscription}</p>
+            <p><strong>Created At:</strong> {new Date(sessionDetails?.created * 1000).toLocaleString()}</p>
+            <p><strong>Expires At:</strong> {new Date(sessionDetails?.expiration * 1000).toLocaleString()}</p>
+            <p><strong>Success URL:</strong> <a href={sessionDetails?.success_url}>{sessionDetails?.success_url}</a></p>
+            <p><strong>Cancel URL:</strong> <a href={sessionDetails?.cancel_url}>{sessionDetails?.cancel_url}</a></p>
+          </div>
+
+          <ProductDetails product={sessionDetails?.product} />
+        </>
       )}
-      <Last4Display last4={last4} />
       <CheckoutForm />
     </section>
   );

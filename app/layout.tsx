@@ -13,9 +13,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
         <title>Your Site Title</title>
       </head>
       <body>
-        <header>
-          <h1>Lichen Subscrip</h1>
-        </header>
         <main>{children}</main>
       </body>
     </html>

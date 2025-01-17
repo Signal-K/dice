@@ -101,8 +101,6 @@ class StripeSessionDetailsView(APIView):
         
         try:
             session = stripe.checkout.Session.retrieve(session_id)
-
-            # Collect session details
             session_details = {
                 "id": session.id,
                 "status": session.status,
@@ -121,13 +119,28 @@ class StripeSessionDetailsView(APIView):
                 "payment_method_types": session.payment_method_types,
             }
 
+            # Fetch subscription details
+            if session.subscription:
+                subscription = stripe.Subscription.retrieve(session.subscription)
+
+                # Get the current transaction date (start of the current period)
+                current_transaction_date = subscription.current_period_start
+                next_transaction_date = subscription.current_period_end
+
+                # Convert to readable date format
+                from datetime import datetime
+                current_transaction_date = datetime.utcfromtimestamp(current_transaction_date).strftime('%Y-%m-%d')
+                next_transaction_date = datetime.utcfromtimestamp(next_transaction_date).strftime('%Y-%m-%d')
+
+                session_details["current_transaction_date"] = current_transaction_date
+                session_details["next_transaction_date"] = next_transaction_date
+
             line_items = stripe.checkout.Session.list_line_items(session.id, limit=1)
             product_details = []
             for item in line_items.data:
                 product_details.append({
                     'name': item.description,
                     'amount_total': item.amount_total,
-                    'image_url': item.image,
                 })
 
             session_details["line_items"] = product_details

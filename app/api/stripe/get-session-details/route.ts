@@ -5,7 +5,7 @@ const stripe = new Stripe('sk_test_51OoZttBTr6htJNMLfQTJv8IvKT5vdbtbtg9GPPp9Blgm
 
 export async function GET(req: NextRequest) {
   const session_id = req.nextUrl.searchParams.get('session_id');
-  console.log("Received session_id:", session_id); // Log the session_id to ensure it's correct
+  console.log("Received session_id:", session_id);
 
   if (!session_id) {
     return NextResponse.json({ error: 'Session ID is required' }, { status: 400 });
@@ -37,7 +37,7 @@ export async function GET(req: NextRequest) {
     const item = line_items.data[0];
     const productData = {
       name: item.description || 'No description available',
-      price: item.amount_total / 100, // price in dollars
+      price: item.amount_total / 100,
       last4: last4,
     };
 

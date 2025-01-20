@@ -7,6 +7,8 @@ import '../styles/Subscrip.css';
 
 import { SessionIdDisplay, ProductDetails, TransactionStatus, CheckoutForm } from '@/components/billing';
 import { API_URL } from '@/config';
+import InvoiceDetailsComponent from '@/components/billing/détails_facture';
+import InvoiceButtons from '@/components/billing/toutes_facture';
 
 type Product = {
   name: string;
@@ -16,6 +18,7 @@ type Product = {
 
 type SessionDetails = {
   customer_name: string;
+  customer_id: string;
   customer_email: string;
   status: string;
   amount_total?: number;
@@ -66,6 +69,7 @@ const HomePage: React.FC = () => {
       setSessionDetails({
         customer_name: data.customer_name,
         customer_email: data.customer_email,
+        customer_id: data.customer_id,
         status: data.status,
         amount_total: data.amount_total,
         currency: data.currency,
@@ -88,8 +92,8 @@ const HomePage: React.FC = () => {
 
   return (
     <section className="relative">
-      <TransactionStatus status={transactionStatus} />
-      <SessionIdDisplay sessionId={sessionId} />
+      {/* <TransactionStatus status={transactionStatus} /> */}
+      {/* <SessionIdDisplay sessionId={sessionId} /> */}
       {loading ? (
         <p className="text-center mt-8">Loading session details...</p>
       ) : (
@@ -97,6 +101,7 @@ const HomePage: React.FC = () => {
           <div className="session-details">
             <p><strong>Customer Name:</strong> {sessionDetails?.customer_name}</p>
             <p><strong>Customer Email:</strong> {sessionDetails?.customer_email}</p>
+            <p><strong>Customer Id:</strong>{sessionDetails?.customer_id}</p>
             <p><strong>Status:</strong> {sessionDetails?.status}</p>
             <p><strong>Amount Total:</strong> {sessionDetails?.amount_total ? sessionDetails.amount_total / 100 : 'N/A'} {sessionDetails?.currency.toUpperCase()}</p>
             <p><strong>Payment Status:</strong> {sessionDetails?.payment_status}</p>
@@ -109,6 +114,10 @@ const HomePage: React.FC = () => {
             <p><strong>Current Transaction Date:</strong> {sessionDetails?.current_transaction_date}</p>
             <p><strong>Next Transaction Date:</strong> {sessionDetails?.next_transaction_date}</p>
           </div>
+
+          {sessionDetails && (<InvoiceButtons customerId={sessionDetails?.customer_id} /> )}
+
+          {sessionDetails && ( <InvoiceDetailsComponent invoiceId={sessionDetails.invoice} /> )}
 
           {sessionDetails?.product && (
             <ProductDetails product={sessionDetails.product} />

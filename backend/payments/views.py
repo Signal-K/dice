@@ -194,8 +194,8 @@ class StripeSessionDetailsView(APIView):
                 "amount_subtotal": session.amount_subtotal,
                 "amount_total": session.amount_total,
                 "currency": session.currency,
-                "customer_email": session.customer_details.email,
-                "customer_name": session.customer_details.name,
+                "customer_email": session.customer_details.email if session.customer_details else None,
+                "customer_name": session.customer_details.name if session.customer_details else None,
                 "payment_status": session.payment_status,
                 "invoice": session.invoice,
                 "subscription": session.subscription,
@@ -204,9 +204,10 @@ class StripeSessionDetailsView(APIView):
                 "created": session.created,
                 "expiration": session.expires_at,
                 "payment_method_types": session.payment_method_types,
+                "customer_id": session.customer  # Add customer_id to the response
             }
 
-            # Fetch subscription details
+            # Fetch subscription details if available
             if session.subscription:
                 subscription = stripe.Subscription.retrieve(session.subscription)
 
@@ -222,7 +223,8 @@ class StripeSessionDetailsView(APIView):
                 session_details["current_transaction_date"] = current_transaction_date
                 session_details["next_transaction_date"] = next_transaction_date
 
-            line_items = stripe.checkout.Session.list_line_items(session.id, limit=1)
+            # Fetch line items
+            line_items = stripe.checkout.Session.list_line_items(session.id, limit=10)
             product_details = []
             for item in line_items.data:
                 product_details.append({
@@ -241,3 +243,72 @@ class StripeSessionDetailsView(APIView):
             logger.error(f"Unexpected error: {str(e)}")
             return Response({'error': 'Failed to retrieve session details'}, 
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class StripeInvoiceDetailsView(APIView):
+    def get(self, request):
+        invoice_id = request.GET.get("invoice_id")
+        if not invoice_id:
+            return Response({'error': 'Invoice ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            # Retrieve the invoice details from Stripe
+            invoice = stripe.Invoice.retrieve(invoice_id)
+            
+            # Structure the response data
+            invoice_details = {
+                "id": invoice.id,
+                "status": invoice.status,
+                "amount_due": invoice.amount_due,
+                "amount_paid": invoice.amount_paid,
+                "amount_remaining": invoice.amount_remaining,
+                "currency": invoice.currency,
+                "customer_email": invoice.customer_email,
+                "customer_name": invoice.customer_name,
+                "hosted_invoice_url": invoice.hosted_invoice_url,
+                "invoice_pdf": invoice.invoice_pdf,
+                "created": invoice.created,
+                "due_date": invoice.due_date,
+                "lines": [
+                    {
+                        "description": line.description,
+                        "amount": line.amount,
+                        "quantity": line.quantity,
+                    }
+                    for line in invoice.lines.data
+                ],
+                "subscription": invoice.subscription,
+                "metadata": invoice.metadata,
+            }
+
+            return Response(invoice_details)
+        except stripe.error.StripeError as e:
+            logger.error(f"Stripe error: {e.user_message}")
+            return Response({'error': e.user_message}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            logger.error(f"Unexpected error: {str(e)}")
+            return Response({'error': 'Failed to retrieve invoice details'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class CustomerInvoicesView(APIView):
+    def get(self, request):
+        customer_id = request.GET.get("customer_id")
+        if not customer_id:
+            return Response({'error': 'Customer ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            invoices = stripe.Invoice.list(customer=customer_id)
+            invoice_data = [
+                {
+                    "id": invoice.id,
+                    "hosted_invoice_url": invoice.hosted_invoice_url,
+                    "status": invoice.status,
+                    "amount_due": invoice.amount_due / 100,
+                    "currency": invoice.currency.upper(),
+                }
+                for invoice in invoices.data
+            ]
+            return Response(invoice_data, status=status.HTTP_200_OK)
+        except stripe.error.StripeError as e:
+            return Response({'error': e.user_message}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            return Response({'error': 'Failed to fetch invoices'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

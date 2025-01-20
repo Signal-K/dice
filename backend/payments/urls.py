@@ -1,5 +1,5 @@
 from django.urls import path
-from .views import StripeCheckoutViewIndividualMonthly, StripeCheckoutViewTeamMonthly, StripeSessionDetailsView, StripeCheckoutViewIndividualYearly, StripeCheckoutViewTeamYearly
+from .views import StripeCheckoutViewIndividualMonthly, StripeCheckoutViewTeamMonthly, StripeSessionDetailsView, StripeCheckoutViewIndividualYearly, StripeCheckoutViewTeamYearly, StripeInvoiceDetailsView
 
 
 urlpatterns = [
@@ -8,4 +8,5 @@ urlpatterns = [
     path('create-checkout-team-monthly-session', StripeCheckoutViewTeamMonthly.as_view()),
     path('create-checkout-team-yearly-session', StripeCheckoutViewTeamYearly.as_view()),
     path('get-session-details', StripeSessionDetailsView.as_view()),
+    path('api/stripe/get-invoice-details', StripeInvoiceDetailsView.as_view(), name='get-invoice-details'),
 ]

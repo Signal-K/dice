@@ -50,6 +50,50 @@ class StripeCheckoutViewIndividualMonthly(APIView):
                 {'error': 'Something went wrong when creating the stripe checkout session'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+        
+class StripeCheckoutViewIndividualYearly(APIView):
+    def post(self, request):
+        try:
+            line_items = [
+                {
+                    'price': 'price_1QjD0LBTr6htJNMLetJHpwsj',
+                    'quantity': 1
+                },
+            ]
+
+            intervals = set()
+            for item in line_items:
+                price = stripe.Price.retrieve(item['price'])
+                if 'recurring' in price and 'interval' in price.recurring:
+                    intervals.add(price.recurring['interval'])
+
+            if len(intervals) > 1:
+                return Response(
+                    {'error': 'Checkout does not support multiple prices with different billing intervals.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            
+            checkout_session = stripe.checkout.Session.create(
+                line_items=line_items,
+                payment_method_types=['card'],
+                mode='subscription',
+                success_url=settings.SITE_URL + '/?success=true&session_id={CHECKOUT_SESSION_ID}',
+                cancel_url=settings.SITE_URL + '/?canceled=true',
+            )
+
+            return Response({'url': checkout_session.url})
+        except stripe.error.StripeError as e:
+            logger.error(f'StripeError: {e.user_message}')
+            return Response(
+                {'error': e.user_message},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        except Exception as e:
+            logger.error(f"General Error: {str(e)}")
+            return Response(
+                {'error': 'Something went wrong when creating the stripe checkout session'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
 class StripeCheckoutViewTeamMonthly(APIView):
     def post(self, request):
@@ -58,7 +102,6 @@ class StripeCheckoutViewTeamMonthly(APIView):
                 {'price': 'price_1Qi9W4BTr6htJNMLBXYpe0K6', 'quantity': 1},
             ]
 
-            # Fetch and validate prices individually
             intervals = set()
             for item in line_items:
                 price = stripe.Price.retrieve(item['price'])
@@ -91,6 +134,50 @@ class StripeCheckoutViewTeamMonthly(APIView):
             return Response(
                 {'error': 'Something went wrong when creating the stripe checkout session'},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+class StripeCheckoutViewTeamYearly(APIView):
+    def post(self, request):
+        try:
+            line_items = [
+                {
+                    'price': 'price_1QjD1GBTr6htJNML5iNhf10w',
+                    'quantity': 1
+                },
+            ]
+
+            intervals = set()
+            for item in line_items:
+                price = stripe.Price.retrieve(item['price'])
+                if 'recurring' in price and 'interval' in price.recurring:
+                    intervals.add(price.recurring['interval'])
+
+            if len(intervals) > 1:
+                return Response(
+                    {'error': 'Checkout does not support multiple prices with different billing intervals.'},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            
+            checkout_session = stripe.checkout.Session.create(
+                line_items=line_items,
+                payment_method_types=['card'],
+                mode='subscription',
+                success_url=settings.SITE_URL + '/?success=true&session_id={CHECKOUT_SESSION_ID}',
+                cancel_url=settings.SITE_URL + '/?canceled=true',
+            )
+
+            return Response({'url': checkout_session.url})
+        except stripe.error.StripeError as e:
+            logger.error(f'StripeError: {e.user_message}')
+            return Response(
+                {'error': e.user_message},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
+        except Exception as e:
+            logger.error(f"General Error: {str(e)}")
+            return Response(
+                {'error': 'Something went wrong when creating the stripe checkout session'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
         
 class StripeSessionDetailsView(APIView):
@@ -153,4 +240,4 @@ class StripeSessionDetailsView(APIView):
         except Exception as e:
             logger.error(f"Unexpected error: {str(e)}")
             return Response({'error': 'Failed to retrieve session details'}, 
-                            status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR)

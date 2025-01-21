@@ -44,7 +44,7 @@ const InvoiceButtons: React.FC<{ customerId: string }> = ({ customerId }) => {
       {loading && <p>Loading invoices...</p>}
       {error && <p className="text-red-500">Error: {error}</p>}
 
-      {invoices && (
+      {invoices && ( 
         <div className="mt-4 space-y-2">
           {invoices.map((invoice) => (
             <a

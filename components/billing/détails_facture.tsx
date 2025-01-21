@@ -14,13 +14,14 @@ type InvoiceDetails = {
   customer_email?: string;
   created?: number;
   status?: string;
+  product_id?: string;
 };
 
 interface InvoiceProps {
   invoiceId: string;
-}
+};
 
-const InvoiceDetailsComponent: React.FC<InvoiceProps> = ({ invoiceId }) => {
+const InvoiceDetailsComponent: React.FC<InvoiceProps> = ({ invoiceId }) => { 
   const [invoiceDetails, setInvoiceDetails] = useState<InvoiceDetails | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -41,8 +42,8 @@ const InvoiceDetailsComponent: React.FC<InvoiceProps> = ({ invoiceId }) => {
         setError('An error occurred while fetching the invoice details.');
       } finally {
         setLoading(false);
-      }
-    }
+      };
+    };
 
     fetchInvoiceDetails();
   }, [invoiceId]);
@@ -62,6 +63,7 @@ const InvoiceDetailsComponent: React.FC<InvoiceProps> = ({ invoiceId }) => {
       <p><strong>Created At:</strong> {invoiceDetails?.created ? new Date(invoiceDetails.created * 1000).toLocaleString() : 'N/A'}</p>
       <p><strong>Hosted Invoice:</strong> <a href={invoiceDetails?.hosted_invoice_url} target="_blank" rel="noopener noreferrer">View Invoice</a></p>
       <p><strong>Invoice PDF:</strong> <a href={invoiceDetails?.invoice_pdf} target="_blank" rel="noopener noreferrer">Download PDF</a></p>
+      <p><strong>Product ID: </strong> {invoiceDetails?.product_id}</p>
     </div>
   );
 };

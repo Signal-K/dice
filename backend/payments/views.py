@@ -204,7 +204,57 @@ class StripeSessionDetailsView(APIView):
                 "created": session.created,
                 "expiration": session.expires_at,
                 "payment_method_types": session.payment_method_types,
-                "customer_id": session.customer  # Add customer_id to the response
+                "customer_id": session.customer,
+            }
+
+            # Fetch line items with product_id and product_name
+            line_items = stripe.checkout.Session.list_line_items(session.id, limit=10)
+            product_details = []
+            for item in line_items.data:
+                product = stripe.Product.retrieve(item.price.product)
+                product_details.append({
+                    'product_id': product.id,  # Add the product ID
+                    'product_name': product.name,  # Add the product name
+                    'amount_total': item.amount_total,
+                    'description': item.description,
+                })
+
+            session_details["line_items"] = product_details
+
+            return Response(session_details)
+        
+        except stripe.error.StripeError as e:
+            logger.error(f"Stripe error: {e.user_message}")
+            return Response({'error': e.user_message}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            logger.error(f"Unexpected error: {str(e)}")
+            return Response({'error': 'Failed to retrieve session details'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+    def get(self, request):
+        session_id = request.GET.get("session_id")
+        if not session_id:
+            return Response({'error': 'Session ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+        
+        try:
+            session = stripe.checkout.Session.retrieve(session_id)
+            session_details = {
+                "id": session.id,
+                "status": session.status,
+                "amount_subtotal": session.amount_subtotal,
+                "amount_total": session.amount_total,
+                "currency": session.currency,
+                "customer_email": session.customer_details.email if session.customer_details else None,
+                "customer_name": session.customer_details.name if session.customer_details else None,
+                "payment_status": session.payment_status,
+                "invoice": session.invoice,
+                "subscription": session.subscription,
+                "success_url": session.success_url,
+                "cancel_url": session.cancel_url,
+                "created": session.created,
+                "expiration": session.expires_at,
+                "payment_method_types": session.payment_method_types,
+                "customer_id": session.customer 
             }
 
             # Fetch subscription details if available
@@ -268,17 +318,21 @@ class StripeInvoiceDetailsView(APIView):
                 "invoice_pdf": invoice.invoice_pdf,
                 "created": invoice.created,
                 "due_date": invoice.due_date,
-                "lines": [
-                    {
-                        "description": line.description,
-                        "amount": line.amount,
-                        "quantity": line.quantity,
-                    }
-                    for line in invoice.lines.data
-                ],
+                "lines": [],
                 "subscription": invoice.subscription,
                 "metadata": invoice.metadata,
             }
+
+            # Fetch product details for each line item
+            for line in invoice.lines.data:
+                product = stripe.Product.retrieve(line.price.product)
+                invoice_details["lines"].append({
+                    "description": line.description,
+                    "amount": line.amount,
+                    "quantity": line.quantity,
+                    "product_id": product.id,  
+                    "product_name": product.name, 
+                })
 
             return Response(invoice_details)
         except stripe.error.StripeError as e:

@@ -185,7 +185,7 @@ const BillingPageComp: React.FC = () => {
 const BillingPage: React.FC = () => {
   return (
     <Suspense fallback={<div>Loading...</div>}>
-      <BillingPage />
+      <BillingPageComp />
     </Suspense>
   );
 };

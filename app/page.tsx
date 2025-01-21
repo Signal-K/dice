@@ -53,7 +53,7 @@ const HomePage: React.FC = () => {
       setTransactionStatus('Transaction Successful');
     } else if (values.canceled) {
       setTransactionStatus('Transaction Canceled');
-    }
+    };
 
     if (session_id) {
       setSessionId(session_id);
@@ -92,8 +92,6 @@ const HomePage: React.FC = () => {
 
   return (
     <section className="relative">
-      {/* <TransactionStatus status={transactionStatus} /> */}
-      {/* <SessionIdDisplay sessionId={sessionId} /> */}
       {loading ? (
         <p className="text-center mt-8">Loading session details...</p>
       ) : (
@@ -120,7 +118,9 @@ const HomePage: React.FC = () => {
           {sessionDetails && ( <InvoiceDetailsComponent invoiceId={sessionDetails.invoice} /> )}
 
           {sessionDetails?.product && (
-            <ProductDetails product={sessionDetails.product} />
+            <>
+              <ProductDetails product={sessionDetails.product} />
+            </>
           )}
         </>
       )}

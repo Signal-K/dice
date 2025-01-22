@@ -10,7 +10,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   return (
     <html lang="en">
       <head>
-        <title>Your Site Title</title>
+        <title>Lichen</title>
       </head>
       <body>
         <main>{children}</main>

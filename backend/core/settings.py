@@ -39,6 +39,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'payments',
+    "authings",
     'corsheaders',
 ]
 
@@ -56,6 +57,8 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000'
 ]
+
+AUTH_USER_MODEL = 'authings.User'
 
 ROOT_URLCONF = 'core.urls'
 

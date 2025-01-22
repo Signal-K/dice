@@ -74,7 +74,7 @@ const BillingPageComp: React.FC = () => {
         setError(err.message || "An unexpected error occurred.");
       } finally {
         setLoading(false);
-      }
+      };
     };
 
     fetchSessionDetailsAndInvoices();

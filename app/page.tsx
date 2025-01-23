@@ -9,6 +9,7 @@ import { SessionIdDisplay, ProductDetails, TransactionStatus, CheckoutForm } fro
 import { API_URL } from '@/config';
 import InvoiceDetailsComponent from '@/components/billing/détails_facture';
 import InvoiceButtons from '@/components/billing/toutes_facture';
+import InvoiceProductIds from '@/components/billing/productId';
 
 type Product = {
   name: string;
@@ -112,6 +113,8 @@ const HomePage: React.FC = () => {
             <p><strong>Current Transaction Date:</strong> {sessionDetails?.current_transaction_date}</p>
             <p><strong>Next Transaction Date:</strong> {sessionDetails?.next_transaction_date}</p>
           </div>
+
+          <p>{sessionDetails?.invoice}</p>
 
           {sessionDetails && (<InvoiceButtons customerId={sessionDetails?.customer_id} /> )}
 

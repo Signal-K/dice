@@ -2,6 +2,7 @@
 
 import React, { useEffect, useState } from 'react';
 import { API_URL } from '@/config';
+import InvoiceProductIds from './productId';
 
 type InvoiceDetails = {
   id: string;
@@ -15,6 +16,10 @@ type InvoiceDetails = {
   created?: number;
   status?: string;
   product_id?: string;
+  line_items?: Array<{
+    product_id?: string;
+    product_name?: string;
+  }>;
 };
 
 interface InvoiceProps {
@@ -63,9 +68,16 @@ const InvoiceDetailsComponent: React.FC<InvoiceProps> = ({ invoiceId }) => {
       <p><strong>Created At:</strong> {invoiceDetails?.created ? new Date(invoiceDetails.created * 1000).toLocaleString() : 'N/A'}</p>
       <p><strong>Hosted Invoice:</strong> <a href={invoiceDetails?.hosted_invoice_url} target="_blank" rel="noopener noreferrer">View Invoice</a></p>
       <p><strong>Invoice PDF:</strong> <a href={invoiceDetails?.invoice_pdf} target="_blank" rel="noopener noreferrer">Download PDF</a></p>
-      <p><strong>Product ID: </strong> {invoiceDetails?.product_id}</p>
+
+      <InvoiceProductIds invoiceId={invoiceDetails?.id || 'in_1QjDSFBTr6htJNMLKGp4WgzB'} />
+      {invoiceDetails?.line_items?.map((item, index) => (
+        <div key={index}>
+          <p><strong>Product ID: </strong>{item.product_id || 'N/A'}</p>
+          <p><strong>Product Name: </strong>{item.product_name || 'N/A'}</p>
+        </div>
+      ))}
     </div>
-  );
+  );  
 };
 
 export default InvoiceDetailsComponent;

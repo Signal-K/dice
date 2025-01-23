@@ -19,51 +19,44 @@ type Invoice = {
   currency: string;
 };
 
-type InvoiceDetails = {
+type PlanDetails = {
   id: string;
-  hosted_invoice_url: string;
-  invoice_pdf: string;
-  amount_due?: number;
-  amount_paid?: number;
-  currency?: string;
-  customer_name?: string;
-  customer_email?: string;
-  create?: number;
-  status?: string;
+  nickname: string;
+  amount: number;
+  currency: string;
 };
 
 const BillingPageComp: React.FC = () => {
   const searchParams = useSearchParams();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [planName, setPlanName] = useState<string>("Loading...");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [customerId, setCustomerId] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchSessionDetailsAndInvoices = async () => {
+    const fetchDetails = async () => {
       setLoading(true);
       setError(null);
 
       try {
         const session_id = searchParams.get("session_id");
-        if (!session_id) {
-          throw new Error("Missing session_id in query parameters.");
+        const customer_id = searchParams.get("customer_id");
+
+        if (!session_id || !customer_id) {
+          throw new Error("Missing session_id or customer_id in query parameters.");
         }
 
-        const sessionResponse = await fetch(`${API_URL}/api/stripe/get-session-details?session_id=${session_id}`);
-        if (!sessionResponse.ok) {
-          throw new Error("Failed to fetch session details.");
+        // Fetch plan details
+        const planResponse = await fetch(`${API_URL}/api/stripe/get-plan-details?session_id=${session_id}`);
+        if (!planResponse.ok) {
+          throw new Error("Failed to fetch plan details.");
         }
 
-        const sessionData = await sessionResponse.json();
-        const fetchedCustomerId = sessionData.customer_id;
+        const planData: PlanDetails = await planResponse.json();
+        setPlanName(planData.nickname);
 
-        if (!fetchedCustomerId) {
-          throw new Error("Customer ID not found in session details.");
-        }
-        setCustomerId(fetchedCustomerId);
-
-        const invoiceResponse = await fetch(`${API_URL}/api/stripe/get-customer-invoices?customer_id=${fetchedCustomerId}`);
+        // Fetch invoices using customer_id
+        const invoiceResponse = await fetch(`${API_URL}/api/stripe/get-customer-invoices?customer_id=${customer_id}`);
         if (!invoiceResponse.ok) {
           throw new Error("Failed to fetch invoices.");
         }
@@ -74,10 +67,10 @@ const BillingPageComp: React.FC = () => {
         setError(err.message || "An unexpected error occurred.");
       } finally {
         setLoading(false);
-      };
+      }
     };
 
-    fetchSessionDetailsAndInvoices();
+    fetchDetails();
   }, [searchParams]);
 
   const formatDate = (timestamp: number) => {
@@ -109,8 +102,7 @@ const BillingPageComp: React.FC = () => {
                 <CardContent className="grid gap-4">
                   <div>
                     <h3 className="flex items-center justify-between font-semibold">
-                      Team Plan
-                      <span>$275/mth</span>
+                      {planName} <span>$275/mth</span>
                     </h3>
                     <ul className="mt-2 space-y-1 text-sm text-gray-500">
                       <li>3 Projects, 10 Users</li>

@@ -10,3 +10,5 @@ requests==2.26.0
 sqlparse==0.4.2
 stripe==2.61.0
 urllib3==1.26.7
+djangorestframework-simplejwt==5.3.1
+djoser==2.2.2

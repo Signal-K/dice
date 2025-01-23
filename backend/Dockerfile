@@ -1,28 +1,21 @@
-# Dockerfile for Django (Backend)
+# Use an official Python runtime as a parent image
+FROM python:3.11
 
-# Step 1: Build the app
-FROM python:3.11-slim AS build
+# Set environment variables
+ENV PYTHONDONTWRITEBYTECODE 1
+ENV PYTHONUNBUFFERED 1
 
-WORKDIR /backend
+# Set the working directory in the container
+WORKDIR /app
 
-# Install dependencies
-COPY backend/requirements.txt ./
-RUN pip install --no-cache-dir -r requirements.txt
+# Copy the current directory contents into the container at /app
+COPY . /app
 
-# Step 2: Create a production image
-FROM python:3.11-slim
+# Install any needed packages specified in requirements.txt
+RUN pip install --upgrade pip && pip install -r requirements.txt
 
-WORKDIR /backend
-
-# Install runtime dependencies
-COPY --from=build /backend/requirements.txt /backend/
-RUN pip install --no-cache-dir -r requirements.txt
-
-# Copy the app's source code
-COPY backend/ /backend/
-
-# Expose port 8000 for Django
+# Make port 8000 available to the world outside this container
 EXPOSE 8000
 
-# Start the Django app
+# Run Django server
 CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]

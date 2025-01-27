@@ -4,14 +4,14 @@ import { AuthActions } from "./auth";
 const { handleJWTRefresh, storeToken, getToken } = AuthActions();
 
 const api = () => {
+  const baseUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
   return (
-    wretch("http://localhost:8000")
+    wretch(baseUrl)
       .auth(`Bearer ${getToken("access")}`)
       .catcher(401, async (error: WretchError, request: Wretch) => {
         try {
-          const { access } = (await handleJWTRefresh().json()) as {
-            access: string;
-          };
+          const { access } = (await handleJWTRefresh().json()) as { access: string };
 
           storeToken(access, "access");
 
@@ -19,7 +19,7 @@ const api = () => {
             .auth(`Bearer ${access}`)
             .fetch()
             .unauthorized(() => {
-              window.location.replace("/");
+              window.location.replace("/"); 
             })
             .json();
         } catch (err) {
@@ -31,8 +31,8 @@ const api = () => {
 
 /**
  * Fetches data from the specified URL, automatically handling authentication and token refresh.
- * @returns {Promise<any>} The promise resolving to the fetched data.
- * @param url
+ * @param url - The API endpoint to fetch data from
+ * @returns {Promise<any>} - The data from the fetched URL
  */
 export const fetcher = (url: string): Promise<any> => {
   return api().get(url).json();

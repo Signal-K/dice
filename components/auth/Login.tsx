@@ -1,3 +1,5 @@
+'use client';
+
 import React from "react";
 import { useForm } from "react-hook-form";
 import { AuthActions } from "@/utisl/auth";
@@ -27,7 +29,7 @@ const Login = () => {
         storeToken(json.access, "access");
         storeToken(json.refresh, "refresh");
 
-        router.push("dashboard");
+        router.push("account");
       })
       .catch((err) => {
         setError("root", { type: "manual", message: err.json.detail });

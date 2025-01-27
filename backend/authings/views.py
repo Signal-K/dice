@@ -1,19 +1,11 @@
-# authings/views.py
-
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
-from django.contrib.auth import get_user_model, login, logout, authenticate
-from django.contrib.auth.hashers import make_password
-from rest_framework.views import APIView
-from rest_framework.permissions import AllowAny
-from rest_framework import status
-from rest_framework.response import Response
-from django.core.exceptions import ObjectDoesNotExist
-from rest_framework.permissions import IsAuthenticated, AllowAny
-from django.contrib.auth.models import User
+from django.contrib.auth import get_user_model, logout, authenticate
+from rest_framework.permissions import IsAuthenticated
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
+from .models import OrgLink, Organisation
 
 User = get_user_model()
 
@@ -24,11 +16,9 @@ class LoginView(APIView):
 
         user = authenticate(email=email, password=password)
         if user is not None:
-        
             refresh = RefreshToken.for_user(user)
             access_token = str(refresh.access_token)
 
-        
             return Response({'accessToken': access_token}, status=status.HTTP_200_OK)
         
         return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
@@ -38,6 +28,58 @@ class LogoutView(APIView):
         logout(request) 
         return Response({"message": "Logged out successfully"})
 
+class ProfileView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        org_links = OrgLink.objects.filter(user=user)
+        organisations = [link.organisation for link in org_links]
+
+        return Response({
+            'email': user.email,
+            'username': user.email.split('@')[0], 
+            'customer_id': user.customer_id, 
+            'name': user.name,
+            'organisations': [org.name for org in organisations]
+        })
+
+    def patch(self, request, *args, **kwargs):
+        user = request.user
+        name = request.data.get('name')
+        customer_id = request.data.get('customer_id')
+
+        if name:
+            user.name = name
+        if customer_id:
+            user.customer_id = customer_id
+        
+        user.save()
+        
+        return Response({
+            'email': user.email,
+            'username': user.email.split('@')[0], 
+            'customer_id': user.customer_id, 
+            'name': user.name,
+        })
+
+class UserOrganisationsView(APIView):
+    permission_classes = [IsAuthenticated]
+    authentication_classes = [JWTAuthentication]
+
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        org_links = OrgLink.objects.filter(user=user)
+        organisations = [link.organisation for link in org_links]
+        
+        return Response({
+            'organisations': [org.name for org in organisations]
+        })
+    
+
+
+# Possibly remove these later
 class UpdateCustomerIdView(APIView):
     def post(self, request, *args, **kwargs):
         user_id = request.data.get('userId')
@@ -78,30 +120,3 @@ class GetCustomerIdView(APIView):
                 {"error": "User not found"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        
-class ProfileView(APIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
-
-    def get(self, request, *args, **kwargs):
-        user = request.user
-        return Response({
-            'email': user.email,
-            'name': user.name,
-            'customer_id': user.customer_id
-        })
-
-
-
-class LogoutView(APIView):
-    permission_classes = (AllowAny,)
-    authentication_classes = ()
-
-    def post(self, request):
-        try:
-            refresh_token = request.data["refresh"]
-            token = RefreshToken(refresh_token)
-            token.blacklist()
-            return Response(status=status.HTTP_200_OK)
-        except (ObjectDoesNotExist, TokenError):
-            return Response(status=status.HTTP_400_BAD_REQUEST)

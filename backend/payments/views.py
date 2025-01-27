@@ -330,8 +330,8 @@ class StripeInvoiceDetailsView(APIView):
                     "description": line.description,
                     "amount": line.amount,
                     "quantity": line.quantity,
-                    "product_id": product.id,  
-                    "product_name": product.name, 
+                    "product_id": product.id,  # Add the product ID here
+                    "product_name": product.name,  # Add the product name here
                 })
 
             return Response(invoice_details)
@@ -366,3 +366,47 @@ class CustomerInvoicesView(APIView):
             return Response({'error': e.user_message}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
         except Exception as e:
             return Response({'error': 'Failed to fetch invoices'}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+class InvoiceProductIdsView(APIView):
+    def get(self, request):
+        invoice_id = request.GET.get("invoice_id")
+        if not invoice_id:
+            return Response({'error': 'Invoice ID is required'}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            # Retrieve the invoice details from Stripe
+            invoice = stripe.Invoice.retrieve(invoice_id)
+            
+            # Initialize list to store line item details
+            line_items = []
+
+            # Fetch product details for each line item
+            for line in invoice.lines.data:
+                product = stripe.Product.retrieve(line.price.product)
+                
+                # Append all relevant line item details
+                line_items.append({
+                    'id': line.id,
+                    'amount': line.amount,
+                    'amount_excluding_tax': line.amount_excluding_tax,
+                    'currency': line.currency,
+                    'description': line.description,
+                    'livemode': line.livemode,
+                    'quantity': line.quantity,
+                    'subscription': line.subscription,
+                    'price': line.price,
+                    'plan': line.plan,
+                    'unit_amount_excluding_tax': line.unit_amount_excluding_tax,
+                    'product_id': product.id,
+                    'product_name': product.name
+                })
+
+            return Response({"line_items": line_items})
+        
+        except stripe.error.StripeError as e:
+            logger.error(f"Stripe error: {e.user_message}")
+            return Response({'error': e.user_message}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception as e:
+            logger.error(f"Unexpected error: {str(e)}")
+            return Response({'error': 'Failed to retrieve invoice details'}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR)

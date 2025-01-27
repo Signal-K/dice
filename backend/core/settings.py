@@ -58,6 +58,8 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:3000'
 ]
 
+CSRF_TRUSTED_ORIGINS = ['https://*.mydomain.com','https://*.127.0.0.1']
+
 AUTH_USER_MODEL = 'authings.User'
 
 ROOT_URLCONF = 'core.urls'
@@ -131,9 +133,12 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 REST_FRAMEWORK = {
-    'DEFAULT_PERMISSION_CLASSES': [
-        'rest_framework.permissions.AllowAny'
-    ]
+    'DEFAULT_AUTHENTICATION_CLASSES': (
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ),
+    'DEFAULT_PERMISSION_CLASSES': (
+        'rest_framework.permissions.IsAuthenticated',
+    ),
 }
 
 SITE_URL = 'http://localhost:3000'

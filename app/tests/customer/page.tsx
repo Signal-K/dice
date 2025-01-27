@@ -16,7 +16,7 @@ const SetCustomerIdForm: React.FC<SetCustomerIdFormProps> = ({ userId }) => {
   useEffect(() => {
     const fetchCustomerId = async () => {
       try {
-        const res = await fetch(`${API_URL}/api/auth/update-customer-id/${userId}/`);
+        const res = await fetch(`${API_URL}/api/accounts/update-customer-id/${userId}/`);
         if (res.ok) {
           const data = await res.json();
           if (data.customer_id) {
@@ -37,7 +37,7 @@ const SetCustomerIdForm: React.FC<SetCustomerIdFormProps> = ({ userId }) => {
     e.preventDefault();
 
     try {
-      const res = await fetch(`${API_URL}/api/auth/update-customer-id/`, {
+      const res = await fetch(`${API_URL}/api/accounts/update-customer-id/`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

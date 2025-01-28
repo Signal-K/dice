@@ -1,3 +1,8 @@
+from django.db import models
+from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, UserManager
+from django.utils import timezone
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
@@ -7,76 +12,95 @@ from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from .models import OrgLink, Organisation
 
-User = get_user_model()
+class CustomUserManager(UserManager):
+    def _create_user(self, email, password, **extra_fields):
+        if not email:
+            raise ValueError("You have not provided a valid email address")
 
-class LoginView(APIView):
-    def post(self, request, *args, **kwargs):
-        email = request.data.get('email')
-        password = request.data.get('password')
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
+        user.set_password(password)
+        user.save(using=self._db)
 
-        user = authenticate(email=email, password=password)
-        if user is not None:
-            refresh = RefreshToken.for_user(user)
-            access_token = str(refresh.access_token)
+        return user
 
-            return Response({'accessToken': access_token}, status=status.HTTP_200_OK)
-        
-        return Response({'error': 'Invalid credentials'}, status=status.HTTP_401_UNAUTHORIZED)
+    def create_user(self, email=None, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", False)
+        extra_fields.setdefault("is_superuser", False)
+        return self._create_user(email, password, **extra_fields)
 
-class LogoutView(APIView):
-    def post(self, request, *args, **kwargs):
-        logout(request) 
-        return Response({"message": "Logged out successfully"})
+    def create_superuser(self, email, password=None, **extra_fields):
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
 
-class ProfileView(APIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError("Superuser must have is_staff=True.")
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError("Superuser must have is_superuser=True.")
 
-    def get(self, request, *args, **kwargs):
-        user = request.user
-        org_links = OrgLink.objects.filter(user=user)
-        organisations = [link.organisation for link in org_links]
+        return self._create_user(email, password, **extra_fields)
 
-        return Response({
-            'email': user.email,
-            'username': user.email.split('@')[0], 
-            'customer_id': user.customer_id, 
-            'name': user.name,
-            'organisations': [org.name for org in organisations]
-        })
+class User(AbstractBaseUser, PermissionsMixin):
+    email = models.EmailField(blank=True, default='', unique=True)
+    name = models.CharField(max_length=255, blank=True, default='')
+    customer_id = models.CharField(max_length=255, blank=True, null=True)
 
-    def patch(self, request, *args, **kwargs):
-        user = request.user
-        name = request.data.get('name')
-        customer_id = request.data.get('customer_id')
+    is_active = models.BooleanField(default=True)
+    is_superuser = models.BooleanField(default=False)
+    is_staff = models.BooleanField(default=False)
 
-        if name:
-            user.name = name
-        if customer_id:
-            user.customer_id = customer_id
-        
-        user.save()
-        
-        return Response({
-            'email': user.email,
-            'username': user.email.split('@')[0], 
-            'customer_id': user.customer_id, 
-            'name': user.name,
-        })
+    date_joined = models.DateTimeField(default=timezone.now)
+    last_login = models.DateTimeField(blank=True, null=True)
 
-class UserOrganisationsView(APIView):
-    permission_classes = [IsAuthenticated]
-    authentication_classes = [JWTAuthentication]
+    objects = CustomUserManager()
 
-    def get(self, request, *args, **kwargs):
-        user = request.user
-        org_links = OrgLink.objects.filter(user=user)
-        organisations = [link.organisation for link in org_links]
-        
-        return Response({
-            'organisations': [org.name for org in organisations]
-        })
-    
+    USERNAME_FIELD = 'email'
+    EMAIL_FIELD = 'email'
+    REQUIRED_FIELDS = []
+
+    class Meta: 
+        verbose_name = 'User'
+        verbose_name_plural = 'Users'
+
+    def get_full_name(self):
+        return self.name
+
+    def get_short_name(self):
+        return self.name or self.email.split('@')[0]
+
+class Organisation(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Organisation'
+        verbose_name_plural = 'Organisations'
+
+    def __str__(self):
+        return self.name
+
+class OrgLink(models.Model):
+    organisation = models.ForeignKey(Organisation, on_delete=models.CASCADE, related_name="members")
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name="organisations")
+    joined_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Org Link'
+        verbose_name_plural = 'Org Links'
+        unique_together = ('organisation', 'user')
+
+    def __str__(self):
+        return f"{self.user.get_full_name()} -> {self.organisation.name}"
+
+@receiver(post_save, sender=User)
+def create_organisation_and_link(sender, instance, created, **kwargs):
+    if created:
+        org_name = f"{instance.get_short_name()}_org"
+        organisation, _ = Organisation.objects.get_or_create(name=org_name)
+        OrgLink.objects.create(organisation=organisation, user=instance)
+
+
+
 
 
 # Possibly remove these later

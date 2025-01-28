@@ -3,9 +3,10 @@
 import useSWR from "swr";
 import { fetcher } from "@/utisl/fetcher";
 import { AuthActions } from "@/utisl/auth";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Cookies from "js-cookie";
+import { CheckoutForm } from "../billing";
 
 const getToken = (tokenType: "access" | "refresh") => {
   return Cookies.get(`${tokenType}Token`);
@@ -14,23 +15,25 @@ const getToken = (tokenType: "access" | "refresh") => {
 export default function Account() {
   const router = useRouter();
   const { logout, removeTokens } = AuthActions();
-  
+  const searchParams = useSearchParams();
   const { data: user, error } = useSWR("/api/auth/profile/", fetcher);
   const { data: organisations } = useSWR("/api/auth/user-organisations/", fetcher);
 
   const [name, setName] = useState(user?.name || "");
   const [customerId, setCustomerId] = useState(user?.customer_id || "");
   const [isEditing, setIsEditing] = useState(false);
+  const [showConfirmPopup, setShowConfirmPopup] = useState(false);
+  const [sessionIdFromUrl, setSessionIdFromUrl] = useState<string | null>(null);
 
   const handleLogout = () => {
     logout()
       .res(() => {
         removeTokens();
-        router.push("/");
+        router.push("/login");
       })
       .catch(() => {
         removeTokens();
-        router.push("/");
+        router.push("/login");
       });
   };
 
@@ -56,6 +59,36 @@ export default function Account() {
 
     setIsEditing(false);
   };
+
+  useEffect(() => {
+    const sessionId = searchParams.get("session_id");
+    if (sessionId && sessionId !== customerId) {
+      setSessionIdFromUrl(sessionId);
+      setCustomerId(sessionId); // Automatically update the customer_id
+    }
+  }, [searchParams, customerId]);
+
+  useEffect(() => {
+    if (sessionIdFromUrl) {
+      const token = getToken("access");
+
+      if (!token) {
+        console.error("No token found!");
+        return;
+      };
+
+      fetch("http://localhost:8000/api/auth/profile/", {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          customer_id: sessionIdFromUrl,
+        }),
+      });
+    }
+  }, [sessionIdFromUrl]);
 
   if (error) {
     return <div>Error loading user data...</div>;
@@ -139,6 +172,8 @@ export default function Account() {
           Disconnect
         </button>
       </div>
+      
+      <CheckoutForm />
     </div>
   );
 };

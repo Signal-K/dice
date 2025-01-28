@@ -10,6 +10,8 @@ import { API_URL } from '@/config';
 import InvoiceDetailsComponent from '@/components/billing/détails_facture';
 import InvoiceButtons from '@/components/billing/toutes_facture';
 import InvoiceProductIds from '@/components/billing/productId';
+import { AuthActions } from '@/utisl/auth';
+import Login from '@/components/auth/Login';
 
 type Product = {
   name: string;
@@ -83,9 +85,9 @@ const HomePage: React.FC = () => {
         cancel_url: data.cancel_url,
         current_transaction_date: data.current_transaction_date,
         next_transaction_date: data.next_transaction_date,
-        product: data.product, // Assuming product data is part of the response
+        product: data.product,
       });
-      setLoading(false); // Set loading to false once data is fetched
+      setLoading(false);
     } else {
       console.error('Error fetching session details:', data.error);
     }
@@ -133,6 +135,12 @@ const HomePage: React.FC = () => {
 };
 
 const Page: React.FC = () => {
+  const { isLoggedIn } = AuthActions();
+
+  if (!isLoggedIn()) {
+    return <Login />;
+  };
+
   return (
     <Suspense fallback={<div>Loading...</div>}>
       <HomePage />

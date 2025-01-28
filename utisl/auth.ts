@@ -113,5 +113,9 @@ export const AuthActions = () => {
     getToken,
     logout,
     removeTokens,
+    isLoggedIn: () => {
+      const accessToken = getToken("access");
+      return !!accessToken; 
+    },
   };
 };
